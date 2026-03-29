@@ -1,45 +1,57 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect, useCallback } from "react";
+import { View, Text, PermissionsAndroid } from "react-native";
+import Geolocation from "react-native-geolocation-service";
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+const App = () => {
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const getLocation = useCallback(() => {
+    console.log("📡 Starting location watch...");
+    Geolocation.watchPosition(
+      (position) => {
+        console.log("📍 Latitude:", position.coords.latitude);
+        console.log("📍 Longitude:", position.coords.longitude);
+      },
+      (error) => {
+        console.log("❌ Error:", error);
+      },
+      {
+        enableHighAccuracy: true,
+        distanceFilter: 0,
+        interval: 5000,
+        fastestInterval: 2000,
+        showLocationDialog: true,
+        forceRequestLocation: true,
+      }
+    );
+  }, []);
 
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
+  const requestPermission = useCallback(async () => {
+  console.log("📢 Asking Permission...");
+
+  const granted = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
   );
-}
 
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
+  console.log("📢 Permission result:", granted);
+
+  if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+    console.log("✅ Permission granted");
+    getLocation();
+  } else {
+    console.log("❌ Permission denied");
+  }
+}, [getLocation]);
+
+  useEffect(() => {
+    console.log("App Started");
+    requestPermission();
+  }, [requestPermission]);
 
   return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
+    <View style={{ marginTop: 50 }}>
+      <Text>Getting Location...</Text>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
+};
 
 export default App;
