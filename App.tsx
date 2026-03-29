@@ -1,15 +1,24 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, PermissionsAndroid } from "react-native";
 import Geolocation from "react-native-geolocation-service";
 
 const App = () => {
 
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
   const getLocation = useCallback(() => {
     console.log("📡 Starting location watch...");
     Geolocation.watchPosition(
       (position) => {
-        console.log("📍 Latitude:", position.coords.latitude);
-        console.log("📍 Longitude:", position.coords.longitude);
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          console.log("📍 Latitude:", lat);
+          console.log("📍 Longitude:", lon);
+
+          setLatitude(lat);
+          setLongitude(lon);
       },
       (error) => {
         console.log("❌ Error:", error);
@@ -50,6 +59,13 @@ const App = () => {
   return (
     <View style={{ marginTop: 50 }}>
       <Text>Getting Location...</Text>
+
+      {latitude && longitude && (
+        <>
+         <Text>Latitude: {latitude}</Text>
+         <Text>Longitude: {longitude}</Text>
+        </>
+      )}
     </View>
   );
 };
