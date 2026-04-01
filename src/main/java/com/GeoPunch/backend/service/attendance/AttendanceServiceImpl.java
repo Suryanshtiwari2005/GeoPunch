@@ -12,6 +12,7 @@ import com.GeoPunch.backend.repository.AttendanceRepository;
 import com.GeoPunch.backend.repository.UserRepository;
 import com.GeoPunch.backend.util.GeoUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
@@ -88,12 +90,25 @@ public class AttendanceServiceImpl implements AttendanceService {
                 office.getLongitude()
         );
 
+        double entryRadius = office.getRadius();
+        double exitRadius = office.getRadius() + 5; // buffer
+
+        boolean isInside = distance <= entryRadius;
+        boolean isOutside = distance > exitRadius;
+
+        log.info("📏 Distance: {}", distance);
+        log.info("📌 Entry Radius: {}", entryRadius);
+        log.info("📌 Exit Radius: {}", exitRadius);
+        log.info("📍 Inside: {}", isInside);
+        log.info("📍 Outside: {}", isOutside);
+
         LocalDate today = LocalDate.now();
 
         Optional<Attendance> existing =
                 attendanceRepository.findByUserIdAndDate(user.getId(), today);
 
-        if (distance <= office.getRadius() + 10) {
+        // 🟢 ENTRY
+        if (isInside) {
 
             if (existing.isPresent()) {
                 return mapToResponse(existing.get());
@@ -109,10 +124,13 @@ public class AttendanceServiceImpl implements AttendanceService {
 
             Attendance saved = attendanceRepository.save(attendance);
 
+            log.info("🟢 User checked in");
+
             return mapToResponse(saved);
         }
 
-        if (existing.isPresent()) {
+        // 🔴 EXIT (only if clearly outside buffer)
+        if (isOutside && existing.isPresent()) {
 
             Attendance attendance = existing.get();
 
@@ -128,9 +146,16 @@ public class AttendanceServiceImpl implements AttendanceService {
                 attendance.setTotalDurationInMinutes(minutes);
 
                 attendanceRepository.save(attendance);
+
+                log.info("🔴 User checked out");
             }
 
             return mapToResponse(attendance);
+        }
+
+        // 🟡 IN BUFFER ZONE (do nothing)
+        if (existing.isPresent()) {
+            return mapToResponse(existing.get());
         }
 
         throw new BusinessException("User outside office geofence");

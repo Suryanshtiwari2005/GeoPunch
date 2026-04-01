@@ -15,7 +15,11 @@ public class securityConfig {
         http
                 .csrf(csrf -> csrf.disable())   // disable CSRF
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/attendance/location-check"
+                        ).permitAll()
+//                        .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults());
 
