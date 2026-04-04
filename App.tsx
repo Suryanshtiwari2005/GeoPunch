@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { loginUser, getAuthToken } from './android/app/src/services/authService';
 import React, { useEffect, useCallback } from 'react';
 import { View, Text, PermissionsAndroid } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
@@ -19,59 +20,95 @@ const options = {
     delay: 15000,
   },
 };
-
-
+//
 const backgroundTask = async (taskData: any) => {
   const { delay } = taskData;
+  let lastLat = 0;
+  let lastLon = 0;
 
   while (BackgroundService.isRunning()) {
     try {
-      console.log("🔄 BG loop");
+      console.log('🔄 BG loop');
 
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         try {
           Geolocation.getCurrentPosition(
-            async (position) => {
+            async position => {
               try {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
 
-                console.log("📡 BG Location:", lat, lon);
+                console.log('📡 BG Location:', lat, lon);
 
-                await axios.post(
-                  "http://192.168.1.5:8080/api/attendance/location-check",
-                  {
-                    userId: "7732cea5-fa86-410c-b496-078ca4203719",
-                    latitude: lat,
-                    longitude: lon,
+                const moved =
+                Math.abs(lat - lastLat) > 0.0001 ||
+                Math.abs(lon - lastLon) > 0.0001;
+
+                if (moved) {
+                  lastLat = lat;
+                  lastLon = lon;
+
+                  try {
+                    // 🔐 GET TOKEN
+                    const token = await getAuthToken();
+
+                    if (!token) {
+                      console.log('❌ No token → skipping API');
+                      resolve();
+                      return;
+                    }
+
+                    // 📦 REQUEST BODY
+                    const body = {
+                      latitude: lat,
+                      longitude: lon,
+                    };
+
+                    // 🔐 SECURE API CALL
+                    await axios.post(
+                      'http://192.168.1.5:8080/api/attendance/location-check',
+                      body,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      },
+                    );
+
+                    console.log('🔐 Secure API call success');
+                  } catch (err: any) {
+                    if (err.response) {
+                      console.log('⚠️ Backend:', err.response.data.message);
+                    } else {
+                      console.log('❌ Network error:', err.message);
+                    }
                   }
-                );
-
-                console.log("✅ API success");
+                } else {
+                  console.log('⏸️ Skipped (no movement)');
+                }
               } catch (err) {
-                console.log("❌ API error:", err);
+                console.log('❌ Processing error:', err);
               }
 
               resolve();
             },
-            (error) => {
-              console.log("❌ Location error:", error);
+            error => {
+              console.log('❌ Location error:', error);
               resolve();
             },
             {
               enableHighAccuracy: true,
               timeout: 15000,
               maximumAge: 10000,
-            }
+            },
           );
         } catch (err) {
-          console.log("❌ getCurrentPosition crash:", err);
+          console.log('❌ getCurrentPosition crash:', err);
           resolve();
         }
       });
-
     } catch (e) {
-      console.log("❌ BG loop crash:", e);
+      console.log('❌ BG loop crash:', e);
     }
 
     await sleep(delay);
@@ -108,6 +145,15 @@ const App = () => {
   useEffect(() => {
     const start = async () => {
       console.log('🚀 Starting App');
+
+      const res = await loginUser('test@gmail.com', '123456');
+
+      if (!res.success) {
+        console.log('❌ Login error:', res);
+        return;
+      }
+
+      console.log('✅ Login success');
 
       const fineLocation = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,

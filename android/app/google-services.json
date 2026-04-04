@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "335404809173",
+    "project_id": "geopunch-632ad",
+    "storage_bucket": "geopunch-632ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:335404809173:android:e0baf1eab093cdbb329b5c",
+        "android_client_info": {
+          "package_name": "com.geopunchapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEj2MQNiXdnWJIxYKss6cBVG8uoD_TxuQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:335404809173:android:a85552d6162e60b5329b5c",
+        "android_client_info": {
+          "package_name": "com.me.geopunch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEj2MQNiXdnWJIxYKss6cBVG8uoD_TxuQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
