@@ -9,9 +9,6 @@ import java.util.UUID;
 public class LocationCheckRequestDto {
 
     @NotNull
-    private UUID userId;
-
-    @NotNull
     private Double latitude;
 
     @NotNull

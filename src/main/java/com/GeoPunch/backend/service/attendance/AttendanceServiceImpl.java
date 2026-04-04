@@ -11,8 +11,11 @@ import com.GeoPunch.backend.exception.ResourceNotFoundException;
 import com.GeoPunch.backend.repository.AttendanceRepository;
 import com.GeoPunch.backend.repository.UserRepository;
 import com.GeoPunch.backend.util.GeoUtils;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -30,58 +33,22 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
-//    private final OfficeLocationRepository officeRepository;
-//    private final OrganizationRepository organizationRepository;
-
-//    @Override
-//    public AttendanceResponseDto manualCheckIn(ManualCheckInRequestDto request) {
-//
-//        // 1️⃣ Validate organization
-//        Organization organization = organizationRepository.findById(request.getOrganizationId())
-//                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
-//
-//        // 2️⃣ Validate user inside organization
-//        User user = userRepository.findById(request.getUserId())
-//                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-//
-//        if (!user.getOrganization().getId().equals(organization.getId())) {
-//            throw new BusinessException("User does not belong to this organization");
-//        }
-//
-//        // 3️⃣ Validate office inside organization
-//        OfficeLocation office = officeRepository
-//                .findByIdAndOrganizationId(request.getOfficeId(), request.getOrganizationId())
-//                .orElseThrow(() -> new ResourceNotFoundException("Office not found in organization"));
-//
-//        // 4️⃣ Prevent duplicate attendance
-//        LocalDate today = LocalDate.now();
-//
-//        attendanceRepository.findByUserIdAndDate(user.getId(), today)
-//                .ifPresent(a -> {
-//                    throw new DuplicateResourceException("Attendance already marked for today");
-//                });
-//
-//        // 5️⃣ Create attendance
-//        Attendance attendance = Attendance.builder()
-//                .user(user)
-//                .officeLocation(office)
-//                .organization(organization)
-//                .date(today)
-//                .status(AttendanceStatus.PRESENT)
-//                .build();
-//
-//        Attendance saved = attendanceRepository.save(attendance);
-//
-//        return mapToResponse(saved);
-//    }
 
     @Override
     public AttendanceResponseDto locationCheck(LocationCheckRequestDto request) {
 
-        User user = userRepository.findById(request.getUserId())
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        String firebaseUid = (String) auth.getPrincipal();
+
+        User user = userRepository.findByFirebaseUid(firebaseUid)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         OfficeLocation office = user.getOffice();
+
+        if(office == null){
+            throw new ResourceNotFoundException("No Office Location assigned to this user");
+        }
 
         double distance = GeoUtils.calculateDistance(
                 request.getLatitude(),
@@ -119,6 +86,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                     .organization(user.getOrganization())
                     .officeLocation(office)
                     .date(today)
+                    .checkInTime(LocalDateTime.now())
                     .status(AttendanceStatus.PRESENT)
                     .build();
 

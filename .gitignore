@@ -29,11 +29,16 @@ build/
 .gradle
 local.properties
 *.iml
+target
+build
 *.hprof
 .cxx/
 *.keystore
 !debug.keystore
 .kotlin/
+
+# Firebase credentials - NEVER commit this
+firebase-service-account.json
 
 # node.js
 #
@@ -47,6 +52,7 @@ yarn-error.log
 # screenshots whenever they are needed.
 # For more information about the recommended setup visit:
 # https://docs.fastlane.tools/best-practices/source-control/
+target
 
 **/fastlane/report.xml
 **/fastlane/Preview.html
